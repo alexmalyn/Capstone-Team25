@@ -12,6 +12,8 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
+server = app.server
+
 colors = {
     'background': '#1a1a1a',
     'text': '#f2f2f2',
