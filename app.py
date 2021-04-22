@@ -3,8 +3,8 @@ import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-import plotly.express as px
 import pickle
+import plotly.express as px
 import numpy as np
 import pandas as pd
 
@@ -36,6 +36,21 @@ discloss_5 = np.load('./storage/vis/discloss_5_epochs.pickle',allow_pickle=True)
 genloss_5 = np.load('./storage/vis/genloss_5_epochs.pickle',allow_pickle=True)
 discloss_10 = np.load('./storage/vis/discloss_10_epochs.pickle',allow_pickle=True)
 genloss_10 = np.load('./storage/vis/genloss_10_epochs.pickle',allow_pickle=True)
+sector_tags = ['Industrials',
+ 'Health Care',
+ 'Information Technology',
+ 'Communication Services',
+ 'Consumer Discretionary',
+ 'Utilities',
+ 'Financials',
+ 'Materials',
+ 'Real Estate',
+ 'Consumer Staples',
+ 'Energy']
+trends = {}
+for j in sector_tags:
+    trends[j] = pd.DataFrame.from_dict(pd.read_pickle('./storage/trenddata/' + j + '/trenddata.pickle') ,orient='index',columns=['trend'])
+    trends[j] = trends[j].sort_values(['trend'])
 
 fig1 = px.line(genloss_1,labels={'x-label': 'Training Iterations'})
 
@@ -174,6 +189,22 @@ def ex_data_func(dataframe,rows):
             'overflowX':'scroll',
             #'display':'inline-block'
         })
+
+
+def generate_graph(ind):
+    data = trends[ind]
+    fig = px.bar(data)
+    fig.update_layout(
+        title='Sub-Industry Weighted Projected Growth Rate within the S&P500',
+        plot_bgcolor=colors['background'],
+        paper_bgcolor=colors['background'],
+        font_color=colors['text'],
+        showlegend=False,
+    )
+    fig.update_xaxes(title={'text':''})
+    fig.update_yaxes(title={'text':'Value ($)'})
+    return fig
+    
 
 app.layout = html.Div([
 
@@ -346,6 +377,37 @@ app.layout = html.Div([
         } 
     ),
     
+    dcc.Dropdown(
+        id='industry-dropdown',
+        options=[
+            {'label': 'Industrials', 'value': 'Industrials'},
+            {'label': 'Health Care', 'value': 'Health Care'},
+            {'label': 'Information Technology', 'value': 'Information Technology'},
+            {'label': 'Communication Services', 'value': 'Communication Services'},
+            {'label': 'Consumer Discretionary', 'value': 'Consumer Discretionary'},
+            {'label': 'Utilities', 'value': 'Utilities'},
+            {'label': 'Financials', 'value': 'Financials'},
+            {'label': 'Materials', 'value': 'Materials'},
+            {'label': 'Real Estate', 'value': 'Real Estate'},
+            {'label': 'Consumer Staples', 'value': 'Consumer Staples'},
+            {'label': 'Energy', 'value': 'Energy'},
+        ], value='Industrials', searchable=True, clearable=False,
+        style = {
+            'margin-top': '40px',
+            'margin-left' : '25px',
+            'width': '400px',
+            #'backgroundColor' : colors['background'],
+            #'color' : colors['text'],
+        }
+    ),
+    
+    html.Div([
+        dcc.Graph(id = 'trend-graph',
+            figure = generate_graph('Industrials')
+        ),
+    ], className='row', style = {
+        'margin-top': '35px',
+        'margin-left': '30px'}),
     ],
     style={
         'backgroundColor': colors['background'],
@@ -359,6 +421,12 @@ app.layout = html.Div([
         #'z-index':'1000'
     }
 )
+
+@app.callback(
+    Output('trend-graph', 'figure'),
+    Input('industry-dropdown', 'value'))
+def choose_industry(value):
+    return generate_graph(value)
 
 @app.callback(
     Output('gen-graph', 'figure'),
